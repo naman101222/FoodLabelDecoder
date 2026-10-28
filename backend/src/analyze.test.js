@@ -8,12 +8,12 @@ test('reads units in headings and values on the next line', () => {
   assert.deepEqual(report.nutrients.map(n => n.value), [12, 120])
 })
 
-test('selected label claims use the ingredient profile and leave ingredients unpenalized', () => {
+test('selected claims return evidence records and do not assign a numeric score', () => {
   const result = evaluateLabel('whole wheat, rice, sugar, cocoa', ['no-added-sugar', 'multigrain'], true)
   assert.equal(result.ingredientProfile.sugarCount, 1)
-  assert.equal(result.honesty.checks[0].status, 'contradicted')
-  assert.equal(result.honesty.checks[1].status, 'supported')
-  assert.equal(result.honesty.score, 50)
+  assert.equal(result.honesty.checks[0].status, 'contradicted-by-read-label')
+  assert.equal(result.honesty.checks[1].status, 'no-rule-recorded')
+  assert.equal('score' in result.honesty, false)
 })
 
 test('accepts OCR spacing, decimal commas, zero, and daily-value percentages', () => {

@@ -39,10 +39,127 @@ details summary { cursor: pointer; margin-bottom: 16px; }
 .claim-card { padding: 16px; background: #1e293b; margin-top: 12px; border-radius: 12px; font-size: 14px; }
 .claim-card h4 { margin: 0 0 8px; color: #fcd34d; }
 .claim-card p + p { margin-top: 8px; }
+.dataset-validation { margin-top: 24px; padding-top: 20px; border-top: 1px solid #334155; }
+.dataset-validation h3 { margin-bottom: 8px; }
+.dataset-validation > p { color: #cbd5e1; font-size: 14px; line-height: 22px; }
+.dataset-candidate { margin-top: 12px; padding: 12px; border-radius: 10px; background: #1e293b; font-size: 13px; }
+.dataset-candidate span, .dataset-candidate p { color: #cbd5e1; }
+.dataset-candidate p { margin-top: 6px; }
+.evidence-details { margin-top: 22px; border-top: 1px solid #334155; padding-top: 14px; }
+.evidence-details summary { color: #cbd5e1; }
 .photo-input { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #e7e5e4; }
 .photo-input h2 { font-size: 20px; }
 .photo-input input { display: block; max-width: 100%; margin-top: 12px; }
 .photo-preview { display: block; max-width: 100%; max-height: 260px; margin-top: 16px; border-radius: 12px; object-fit: contain; }
+.hero-title { max-width: 850px; }
+.intro { max-width: 760px; }
+.honesty-checker { border-bottom: 0; }
+.honesty-checker h3 { font-size: 22px; }
+.detected-claims { margin: 16px 0; padding: 14px; border: 1px solid #334155; border-radius: 12px; background: #172337; }
+.detected-claims p { margin: 6px 0; color: #f8fafc; }
+.detected-claims span { color: #cbd5e1; font-size: 12px; }
+.claim-options { min-width: 0; border: 0; padding: 0; }
+.claim-options legend { margin-bottom: 8px; font-weight: 700; }
+.claim-options label { cursor: pointer; }
+.claim-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.claim-card h4 { margin: 0; color: inherit; font-size: 16px; }
+.claim-status { display: inline-flex; border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.claim-supported-by-read-label { border-left: 4px solid #34d399; }
+.claim-supported-by-read-label .claim-status { background: #064e3b; color: #a7f3d0; }
+.claim-contradicted-by-read-label { border-left: 4px solid #fb7185; }
+.claim-contradicted-by-read-label .claim-status { background: #881337; color: #ffe4e6; }
+.claim-cannot-verify, .claim-no-rule-recorded { border-left: 4px solid #fbbf24; }
+.claim-cannot-verify .claim-status, .claim-no-rule-recorded .claim-status { background: #78350f; color: #fef3c7; }
+.claim-evidence { color: #dbeafe; }
+.claim-source { margin-top: 10px; font-size: 12px; color: #cbd5e1; }
+.rule-details { margin-top: 10px; color: #cbd5e1; font-size: 12px; }
+.rule-details summary { margin-bottom: 6px; }
+.rule-details ul { padding-left: 18px; line-height: 20px; }
+.method-note { margin-top: 18px !important; font-size: 12px !important; }
+.no-claims { margin-top: 14px; color: #cbd5e1; }
+.evidence-details { margin-top: 26px; }
+.evidence-details > .ingredients-title { margin-top: 18px; }
+.nutrients { margin-top: 14px; border-top: 1px solid #334155; }
+.nutrient-row { padding: 8px 0; }
+.dataset-validation { display: none; }
+:root { color: #30252a; background: #fff9f7; }
+body, .app { background: #fff9f7; }
+.nav, .container { max-width: 1160px; }
+.brand { color: #754154; font-family: Georgia, serif; }
+.brand-accent, .eyebrow, .sample-button { color: #914c63; }
+.badge { background: #f7e7eb; color: #764456; }
+.hero-title { color: #49343d; font-family: Georgia, 'Times New Roman', serif; font-weight: 500; font-size: clamp(38px, 5vw, 58px); letter-spacing: -.025em; }
+.intro { color: #75686c; }
+.input-panel { border-color: #eadfe1; }
+.upload-slot { border-color: #ddc9cf; background: #fffdfc; }
+.submit-button { background: #914c63; }
+.submit-button:hover:not(:disabled) { background: #743b50; }
+.report-panel { border: 0; background: transparent; color: #30252a; padding: 0; }
+.report-label, .section-kicker { color: #a04f67; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.report-title { color: #513840; font-family: Georgia, 'Times New Roman', serif; font-size: 30px; font-weight: 500; }
+.empty-report { color: #75686c; }
+.reality-section { margin-top: 20px; padding: 22px; border: 1px solid #eee2e4; border-radius: 16px; background: #fff; box-shadow: 0 2px 9px #673c4b0a; }
+.reality-section h3, .verdict-card h3 { margin-top: 5px; color: #49343d; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 500; }
+.serving-context { margin: 8px 0 12px; color: #876b74; font-size: 13px; }
+.nutrition-table-wrap { overflow-x: auto; }
+.nutrition-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.nutrition-table th, .nutrition-table td { padding: 10px 8px; border-bottom: 1px solid #efe6e8; text-align: left; vertical-align: top; }
+.nutrition-table thead th { background: #fbf0f2; color: #82505e; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
+.nutrition-table thead th:first-child { border-radius: 9px 0 0; }
+.nutrition-table thead th:last-child { border-radius: 0 9px 0 0; }
+.nutrition-table thead small { display: block; margin-top: 3px; font-size: 10px; letter-spacing: 0; text-transform: none; }
+.nutrition-table tbody th { font-weight: 600; }
+.nutrition-table tbody td { color: #614a53; font-variant-numeric: tabular-nums; }
+.not-normalized { color: #9b858c; font-size: 11px; }
+.portion-callout { margin-top: 12px; padding: 12px; border-radius: 10px; background: #e8f5ed; color: #346a4c; font-size: 13px; }
+.dark-help { color: #817278; }
+.insight-list { display: grid; gap: 10px; margin-top: 16px; }
+.insight-card { padding: 14px; border: 1px solid #efe5e6; border-left-width: 4px; border-radius: 11px; background: #fff; }
+.insight-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.insight-heading h4 { color: #44353b; font-size: 15px; }
+.insight-heading span { font-size: 11px; font-weight: 700; }
+.insight-card p { margin-top: 6px; color: #72656a; font-size: 12px; line-height: 19px; }
+.insight-card.level-low { border-left-color: #43966a; background: #f8fcf9; }
+.insight-card.level-low .insight-heading span { color: #347752; }
+.insight-card.level-medium { border-left-color: #cf9a3b; background: #fffdf8; }
+.insight-card.level-medium .insight-heading span { color: #986d1f; }
+.insight-card.level-high { border-left-color: #c45f67; background: #fff9f9; }
+.insight-card.level-high .insight-heading span { color: #a53f4a; }
+.insight-card.level-unknown { border-left-color: #aaa0a3; background: #fcfafa; }
+.insight-card.level-unknown .insight-heading span { color: #766c70; }
+.reference-note { margin-top: 14px; color: #82757a; font-size: 11px; line-height: 17px; }
+.reference-note a, .claim-source a { text-decoration: underline; text-underline-offset: 2px; }
+.verdict-card { margin-top: 18px; padding: 20px; border: 1px solid #efd7dc; border-left: 5px solid #9b4d64; border-radius: 14px; background: #fbedf0; }
+.verdict-card > p:not(.section-kicker) { margin-top: 10px; color: #624a52; font-size: 14px; line-height: 22px; }
+.verdict-card .verdict-note { padding-top: 10px; border-top: 1px solid #e8cdd3; font-size: 12px !important; }
+.honesty-checker { margin-top: 20px; padding: 22px; border: 1px solid #eadfe1; border-radius: 16px; background: #fff; }
+.honesty-checker h3 { color: #49343d; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 500; }
+.honesty-checker .format-help { color: #75686c; }
+.detected-claims { background: #fbf3f4; border-color: #eadfe1; color: #57424a; }
+.detected-claims p { color: #57424a; }
+.detected-claims span { color: #817278; }
+.claim-options label, .complete-check { color: #57484d; }
+.claim-card { border: 1px solid #eee3e5; background: #fff; color: #514249; }
+.claim-card h4 { color: #49343d; }
+.claim-card p { line-height: 21px; }
+.claim-supported-by-read-label { background: #f8fcf9; }
+.claim-contradicted-by-read-label { background: #fff8f8; }
+.claim-cannot-verify, .claim-no-rule-recorded { background: #fffdf7; }
+.claim-evidence { color: #55464b; }
+.claim-source { color: #807378; }
+.rule-details { color: #75686c; }
+.method-note { color: #817278 !important; }
+.evidence-details { border-top-color: #eadfe1; color: #55464b; }
+.evidence-details summary, .serving, .ingredients, .notes { color: #75686c; }
+.nutrition-table, .nutrition-table * { color-scheme: light; }
+.snapshot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 9px; margin-top: 14px; }
+.snapshot-item { display: flex; flex-direction: column; gap: 4px; padding: 11px; border: 1px solid #efe5e6; border-radius: 10px; background: #fffdfc; }
+.snapshot-item span { color: #826e75; font-size: 11px; }
+.snapshot-item strong { color: #49343d; font-size: 17px; font-variant-numeric: tabular-nums; }
+.snapshot-item small { color: #887980; font-size: 10px; }
+.leading-ingredients { margin-top: 14px; color: #67545b; font-size: 12px; line-height: 19px; }
+.snapshot-note { margin-top: 12px; color: #91848a; font-size: 10px; }
+@media (max-width: 639px) { .reality-section, .honesty-checker { padding: 16px; } .nutrition-table { min-width: 440px; } .insight-heading { align-items: flex-start; flex-direction: column; gap: 4px; } }
 :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #0f172a; background: #fafaf9; line-height: 1.5; }
 body { margin: 0; min-width: 320px; }
 button, textarea { font: inherit; }

@@ -1,3 +1,5 @@
+import { findIngredientInDataset } from './validationDataset.js'
+
 export const sources = [
   { name: 'FDA: ingredient functions', url: 'https://www.fda.gov/food/food-additives-and-gras-ingredients-information-consumers/types-food-ingredients' },
   { name: 'WHO: food additives', url: 'https://www.who.int/news-room/fact-sheets/detail/food-additives' },
@@ -38,16 +40,18 @@ export function ingredientProfile(text) {
     const id = match?.[0] || (grain === 'maize' ? 'corn' : grain) || raw.toLowerCase()
     const category = match?.[2] || (grain ? 'grain' : 'unrecognized')
     const whole = /\bwhole(?:grain|meal)?\b/i.test(raw)
-    const explanation = match?.[3] || (grain ? 'A grain ingredient. ' + (whole ? 'The wording identifies it as whole grain.' : 'This wording does not establish that it is whole grain.') : 'Not yet covered by our ingredient reference. No health conclusion is assigned.')
+    const datasetEvidence = findIngredientInDataset(raw)
+    const explanation = match?.[3] || (grain ? 'A grain ingredient. ' + (whole ? 'The wording identifies it as whole grain.' : 'This wording does not establish that it is whole grain.') : datasetEvidence ? `This name appears in ${datasetEvidence.productCount} product record(s) in the supplied India dataset. This is an identification match, not a health or safety assessment.` : 'Not yet covered by our ingredient reference. No health conclusion is assigned.')
     const duplicate = seen.has(id)
     seen.add(id)
-    return { raw, id, category, grain: grain ? (grain === 'maize' ? 'corn' : grain) : null, whole, explanation, sugarAlias: Boolean(match?.[4]), duplicate }
+    return { raw, id, category: match?.[2] || (grain ? 'grain' : datasetEvidence ? 'in dataset' : 'unrecognized'), grain: grain ? (grain === 'maize' ? 'corn' : grain) : null, whole, explanation, datasetEvidence, sugarAlias: Boolean(match?.[4]), duplicate }
   })
   const unique = items.filter(item => !item.duplicate)
   return {
     items, sugarCount: unique.filter(i => i.category === 'sugar').length,
     hiddenSugarCount: unique.filter(i => i.sugarAlias).length,
     additiveCount: unique.filter(i => ['preservative', 'emulsifier', 'acidity regulator', 'thickener', 'sweetener', 'flavouring'].includes(i.category)).length,
+    datasetListedCount: unique.filter(i => i.datasetEvidence).length,
     unknownCount: unique.filter(i => i.category === 'unrecognized').length,
     sources,
     countNote: 'Counts are distinct recognized names, including subingredients, not grams or a complete chemical analysis. “Hidden sugars” means recognized sugar aliases, not evidence of concealment. No ingredient receives a health penalty.',

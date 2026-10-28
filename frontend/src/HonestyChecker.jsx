@@ -2,11 +2,18 @@ import { useState } from 'react'
 
 const claims = [
   ['no-added-sugar', 'No added sugar'],
-  ['no-sugar', 'No sugar / sugar-free'],
-  ['multigrain', 'Multigrain'],
-  ['no-preservatives', 'No preservatives'],
+  ['sugar-free', 'Sugar-free'],
   ['high-protein', 'High protein'],
+  ['low-fat', 'Low fat'],
+  ['trans-fat-free', 'Trans fat free'],
 ]
+
+const statusLabels = {
+  'supported-by-read-label': 'Supported by label',
+  'contradicted-by-read-label': 'Contradicted by label',
+  'cannot-verify': 'Cannot verify',
+  'no-rule-recorded': 'No rule recorded',
+}
 
 export default function HonestyChecker({ report, onResult }) {
   const [selected, setSelected] = useState(() => report.suggestedClaims || [])
@@ -14,10 +21,12 @@ export default function HonestyChecker({ report, onResult }) {
   const [complete, setComplete] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
   function toggle(value) {
     setSelected(current => current.includes(value) ? current.filter(item => item !== value) : [...current, value])
     setError('')
   }
+
   async function check(event) {
     event.preventDefault()
     setBusy(true)
@@ -38,34 +47,38 @@ export default function HonestyChecker({ report, onResult }) {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Claims could not be checked.')
       onResult(result)
-    } catch (error) { setError(error.message || 'Could not check these claims.') }
+    } catch (err) { setError(err.message || 'Could not check these claims.') }
     finally { setBusy(false) }
   }
+
   return <section className="honesty-checker">
-    <h3>Label honesty score</h3>
-    <p className="format-help">Check the claims actually printed on this pack. Front-photo suggestions are preselected for you to confirm. Deductions and evidence are shown below.</p>
-    {report.frontText && <p className="format-help"><strong>Front photo text detected:</strong> {report.frontText} Select the claims you want checked below; OCR suggestions are not treated as proof.</p>}
+    <h3>Check the package claims</h3>
+    <p className="format-help">We compare claims we can recognize with the ingredient and nutrition evidence. Confirm the detected phrases or choose the claims you see on the pack.</p>
+    {report.frontText && <div className="detected-claims"><strong>Text read from the front</strong><p>{report.frontText}</p><span>Confirm which phrases are claims below; OCR text alone is not treated as proof.</span></div>}
     <form onSubmit={check}>
-      <div className="claim-options">{claims.map(([key, label]) => <label key={key}>
-        <input type="checkbox" checked={selected.includes(key)} disabled={busy} onChange={() => toggle(key)} />
-        {label}
-      </label>)}</div>
-      <label htmlFor="custom-claims">Other claims, separated by commas</label>
-      <input id="custom-claims" className="label-input" value={custom} disabled={busy} onChange={event => setCustom(event.target.value)} placeholder="e.g. natural, immunity support" />
-      <label className="complete-check"><input type="checkbox" checked={complete} disabled={busy} onChange={event => setComplete(event.target.checked)} /> I entered the complete ingredient list as printed</label>
-      <button className="submit-button" disabled={busy || (!selected.length && !custom.trim())}>{busy ? 'Checking claims…' : 'Check selected claims'}</button>
+      <fieldset className="claim-options">
+        <legend>Claims to check</legend>
+        {claims.map(([key, label]) => <label key={key}>
+          <input type="checkbox" checked={selected.includes(key)} disabled={busy} onChange={() => toggle(key)} />
+          {label}
+        </label>)}
+      </fieldset>
+      <label htmlFor="custom-claims">Other printed claims</label>
+      <input id="custom-claims" className="label-input" value={custom} disabled={busy} onChange={event => setCustom(event.target.value)} placeholder="Separate claims with commas" />
+      <label className="complete-check"><input type="checkbox" checked={complete} disabled={busy} onChange={event => setComplete(event.target.checked)} /> I confirmed the complete ingredient list was read</label>
+      <button className="submit-button" disabled={busy || (!selected.length && !custom.trim())}>{busy ? 'Checking…' : 'Check claims'}</button>
       {error && <p role="alert" className="error">{error}</p>}
     </form>
     {report.honesty && <div className="honesty-result" aria-live="polite">
-      {report.honesty.score !== null && <><p className="honesty-score">{report.honesty.score}<span>/100</span></p><p>Evidence score based on selected claims.</p></>}
-      {report.honesty.score === null && <p className="error-box">{report.honesty.scoreReason}</p>}
-      {report.honesty.checks.map((claim, index) => <article className="claim-card" key={claim.id + index}>
-        <h4>{claim.claim}: {claim.status}</h4>
-        <p>{claim.deduction === null ? 'Not scored. ' : claim.deduction ? '−' + claim.deduction + ' points. ' : 'No deduction. '}{claim.reason}</p>
-        {claim.evidence.length > 0 && <p>Label evidence: {claim.evidence.join(', ')}</p>}
+      {report.honesty.checks.map((claim, index) => <article className={`claim-card claim-${claim.status}`} key={claim.id + index}>
+        <div className="claim-heading"><h4>{claim.claim}</h4><span className="claim-status">{statusLabels[claim.status] || claim.status}</span></div>
+        <p>{claim.reason}</p>
+        {claim.evidence.length > 0 && <p className="claim-evidence"><strong>Evidence found:</strong> {claim.evidence.join(', ')}</p>}
+        {claim.requirements.length > 0 && <details className="rule-details"><summary>What this check requires</summary><ul>{claim.requirements.map(item => <li key={item}>{item}</li>)}</ul></details>}
+        {claim.source && <p className="claim-source"><a href={claim.source.url} target="_blank" rel="noreferrer">{claim.source.title}</a> · {claim.citation}</p>}
       </article>)}
-      {!report.honesty.checks.length && <p>Select at least one printed claim to calculate a score.</p>}
-      <p className="format-help">{report.honesty.method}</p>
+      {!report.honesty.checks.length && <p className="no-claims">Select a printed claim above to see whether the label supports it.</p>}
+      <p className="format-help method-note">Checks are evidence-based rule comparisons, not an overall health score. “Cannot verify” means required label evidence was missing or unclear.</p>
     </div>}
   </section>
 }
