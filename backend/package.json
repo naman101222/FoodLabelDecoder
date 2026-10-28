@@ -1,0 +1,16 @@
+{
+  "name": "food-label-decoder-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "check": "node --check src/index.js && node --check src/analyze.js && node --check src/honesty.js",
+    "test": "node --test src/*.test.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}

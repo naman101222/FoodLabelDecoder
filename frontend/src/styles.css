@@ -1,0 +1,89 @@
+* { box-sizing: border-box; }
+.ingredient-profile, .honesty-checker { padding: 18px 0; border-bottom: 1px solid #334155; }
+.ingredient-profile h3, .honesty-checker h3 { font-size: 18px; margin-bottom: 10px; }
+.profile-counts { margin: 12px 0; }
+.ingredient-list { list-style: none; padding: 0; margin: 14px 0; }
+.ingredient-list li { padding: 12px 0; border-top: 1px solid #334155; }
+.ingredient-list li p { color: #cbd5e1; font-size: 13px; margin-top: 5px; }
+.ingredient-category { display: inline-block; margin-left: 8px; color: #a7f3d0; font-size: 12px; }
+.claim-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+.claim-options label, .complete-check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.complete-check { margin: 16px 0; }
+.honesty-score { font-size: 38px; font-weight: 800; margin: 16px 0 4px; color: #6ee7b7; }
+.honesty-score span { font-size: 16px; color: #cbd5e1; }
+.honesty-result > p { margin-top: 10px; }
+.honesty-checker .format-help { color: #cbd5e1; }
+.format-source { margin-top: 16px; color: #cbd5e1; font-size: 14px; }
+.format-source a, .claim-card a { text-decoration: underline; }
+.rating-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+.rating-item { display: flex; flex-direction: column; gap: 5px; padding: 12px; border-radius: 10px; }
+.level-low { background: #064e3b; color: #d1fae5; }
+.level-medium { background: #78350f; color: #fef3c7; }
+.level-high { background: #881337; color: #ffe4e6; }
+.level-unknown { background: #334155; color: white; }
+.choice { text-align: left; color: #0f172a; }
+.choice:hover { border-color: #047857; background: #ecfdf5; }
+.choice p { margin-top: 12px; }
+.back { margin-top: 24px; padding: 8px 0; }
+.upload-slot { margin: 20px 0; padding: 16px; border: 1px dashed #a8a29e; border-radius: 12px; }
+.upload-slot label { display: block; font-weight: 600; margin-bottom: 12px; }
+.upload-slot .format-help { margin-top: -6px; }
+.upload-slot input { max-width: 100%; }
+.file-name { margin-top: 10px; font-size: 13px; color: #047857; overflow-wrap: anywhere; }
+.privacy-note { padding: 12px 14px; background: #ecfdf5; color: #065f46; border-radius: 10px; font-size: 13px; }
+.review-field { margin: 16px 0; }
+.review-field label { display: block; margin-bottom: 8px; font-weight: 600; }
+details { margin-top: 24px; }
+details summary { cursor: pointer; margin-bottom: 16px; }
+.error-box { background: #78350f; padding: 16px; margin-top: 16px; border-radius: 12px; }
+.claim-card { padding: 16px; background: #1e293b; margin-top: 12px; border-radius: 12px; font-size: 14px; }
+.claim-card h4 { margin: 0 0 8px; color: #fcd34d; }
+.claim-card p + p { margin-top: 8px; }
+.photo-input { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #e7e5e4; }
+.photo-input h2 { font-size: 20px; }
+.photo-input input { display: block; max-width: 100%; margin-top: 12px; }
+.photo-preview { display: block; max-width: 100%; max-height: 260px; margin-top: 16px; border-radius: 12px; object-fit: contain; }
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #0f172a; background: #fafaf9; line-height: 1.5; }
+body { margin: 0; min-width: 320px; }
+button, textarea { font: inherit; }
+button { cursor: pointer; border: 0; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible, a:focus-visible, textarea:focus-visible { outline: 3px solid #059669; outline-offset: 3px; }
+a { color: inherit; text-decoration: none; }
+p, h1, h2, h3, dl, dd { margin: 0; }
+.app { min-height: 100vh; }
+.nav, .container { max-width: 1152px; margin: auto; padding: 24px 20px; }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand, .input-title { font-size: 20px; font-weight: 700; }
+.brand-accent, .eyebrow, .sample-button { color: #047857; }
+.badge { border-radius: 999px; background: #d1fae5; color: #065f46; padding: 4px 12px; font-size: 12px; }
+.container { padding-top: 40px; padding-bottom: 40px; }
+.eyebrow { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+.hero-title { margin-top: 16px; max-width: 768px; font-size: 60px; font-weight: 900; letter-spacing: -.035em; line-height: 1.1; }
+.intro { max-width: 672px; margin-top: 20px; color: #475569; font-size: 18px; }
+.workspace { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.input-panel, .report-panel { min-width: 0; border-radius: 24px; padding: 24px; }
+.input-panel { border: 1px solid #e7e5e4; background: white; box-shadow: 0 1px 2px #0000000d; }
+.format-help { margin: 12px 0; color: #475569; font-size: 14px; }
+.label-input { width: 100%; padding: 16px; border: 1px solid #d6d3d1; border-radius: 12px; background: #fafaf9; font-family: ui-monospace, monospace; font-size: 14px; line-height: 24px; resize: vertical; }
+.actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.sample-button { background: transparent; font-weight: 600; }
+.submit-button { border-radius: 12px; background: #047857; color: white; padding: 12px 20px; font-weight: 700; }
+.submit-button:hover:not(:disabled) { background: #065f46; }
+.error { margin-top: 16px; font-size: 14px; color: #b91c1c; }
+.report-panel { background: #0f172a; color: white; overflow-wrap: anywhere; }
+.report-label { color: #6ee7b7; font-size: 14px; font-weight: 600; }
+.report-title { margin-top: 8px; font-size: 24px; }
+.serving { margin: 20px 0; color: #cbd5e1; }
+.nutrient-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; }
+.nutrient-row + .nutrient-row { border-top: 1px solid #334155; }
+.nutrient-name { text-transform: capitalize; }
+.nutrient-value { font-weight: 700; color: #6ee7b7; }
+.ingredients-title { margin-top: 24px; font-size: 16px; }
+.ingredients, .notes { font-size: 14px; line-height: 24px; color: #cbd5e1; }
+.ingredients { margin-top: 8px; }
+.notes { margin-top: 24px; padding-left: 20px; }
+.notes li + li { margin-top: 8px; }
+.empty-report { margin-top: 32px; line-height: 28px; color: #cbd5e1; }
+@media (max-width: 1023px) { .workspace { grid-template-columns: 1fr; } }
+@media (max-width: 639px) { .hero-title { font-size: 36px; } .nav { flex-wrap: wrap; } }
