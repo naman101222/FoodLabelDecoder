@@ -12,14 +12,47 @@ const levelCopy = {
 }
 
 export default function RealityCheck({ report }) {
-  const view = report.nutritionView
-  if (!view) return null
+  const calculatedView = report.nutritionView
+  const rawNutrients = Array.isArray(report.nutrients) ? report.nutrients : []
+  const rawByKey = new Map(rawNutrients.filter(nutrient => nutrient.key).map(nutrient => [nutrient.key, nutrient]))
+  const titleFromKey = key => typeof key === 'string'
+    ? key.split(/[-_]+/).filter(Boolean).map(part => part[0].toUpperCase() + part.slice(1)).join(' ')
+    : ''
+  const visibleName = (...values) => values.find(value => typeof value === 'string' && value.trim())
+  const fallbackNutrients = rawNutrients.map((nutrient, index) => ({
+    key: nutrient.key || nutrient.name || `nutrient-${index}`,
+    name: visibleName(nutrient.name) || titleFromKey(nutrient.key) || `Nutrient ${index + 1}`,
+    unit: nutrient.unit,
+    asRead: { value: nutrient.value, unit: nutrient.unit },
+    perServing: null,
+    wholePack: null,
+  }))
+  const namedCalculatedNutrients = Array.isArray(calculatedView?.nutrients)
+    ? calculatedView.nutrients.map((nutrient, index) => {
+      const original = rawByKey.get(nutrient.key) || rawNutrients[index]
+      return {
+        ...nutrient,
+        name: visibleName(nutrient.name, nutrient.label, original?.name) || titleFromKey(nutrient.key || original?.key) || `Nutrient ${index + 1}`,
+      }
+    })
+    : []
+  const view = {
+    ...calculatedView,
+    columns: calculatedView?.columns || { basis: report.basis || 'unknown' },
+    nutrients: namedCalculatedNutrients.length ? namedCalculatedNutrients : fallbackNutrients,
+    insights: calculatedView?.insights || [],
+    leadingIngredients: calculatedView?.leadingIngredients || [],
+  }
+  if (!view.nutrients.length) return null
   const insights = view.insights || []
   const highCount = insights.filter(item => item.level === 'high').length
   const checkedClaims = report.honesty?.checks || []
   const contradicted = checkedClaims.filter(item => item.status === 'contradicted-by-read-label')
   const unresolved = checkedClaims.filter(item => item.status === 'cannot-verify' || item.status === 'no-rule-recorded')
-  const amountFor = key => view.nutrients.find(item => item.key === key)?.perServing
+  const amountFor = key => {
+    const nutrient = view.nutrients.find(item => item.key === key)
+    return nutrient?.perServing || nutrient?.asRead
+  }
   const sugarAmount = amountFor('total-sugars')
   const macros = [
     { label: 'Energy', amount: amountFor('energy') },

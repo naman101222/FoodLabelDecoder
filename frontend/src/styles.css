@@ -108,7 +108,7 @@ body, .app { background: #fff9f7; }
 .nutrition-table thead th:first-child { border-radius: 9px 0 0; }
 .nutrition-table thead th:last-child { border-radius: 0 9px 0 0; }
 .nutrition-table thead small { display: block; margin-top: 3px; font-size: 10px; letter-spacing: 0; text-transform: none; }
-.nutrition-table tbody th { font-weight: 600; }
+.nutrition-table tbody th { color: #49343d; font-weight: 600; }
 .nutrition-table tbody td { color: #614a53; font-variant-numeric: tabular-nums; }
 .not-normalized { color: #9b858c; font-size: 11px; }
 .portion-callout { margin-top: 12px; padding: 12px; border-radius: 10px; background: #e8f5ed; color: #346a4c; font-size: 13px; }
