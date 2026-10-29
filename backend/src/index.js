@@ -6,14 +6,13 @@ import { findDatasetMatches } from './validationDataset.js'
 import { buildNutritionView } from './nutritionView.js'
 import { geminiOcrConfigured, geminiOcrModel, readLabelImage } from './geminiOcr.js'
 const app = express()
-const port = Number(process.env.PORT ?? 3001)
 app.use(cors())
 app.get('/api/ocr/status', (_request, response) => response.json({
   configured: geminiOcrConfigured(),
   provider: geminiOcrConfigured() ? 'Google Gemini' : 'Tesseract.js (local fallback)',
   model: geminiOcrConfigured() ? geminiOcrModel() : null,
 }))
-app.post('/api/ocr', express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '12mb' }), async (request, response) => {
+app.post('/api/ocr', express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '4mb' }), async (request, response) => {
   const mimeType = request.headers['content-type']
   const panel = request.headers['x-label-panel']
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
@@ -74,4 +73,11 @@ app.post('/api/evaluate', (request, response) => {
   response.json(evaluateLabel(ingredients, selectedClaims, ingredientListComplete === true, nutrients, request.body?.basis))
 })
 app.get('/health', (_request, response) => response.json({ status: 'ok', service: 'food-label-decoder-api' }))
-app.listen(port, () => console.log(`FoodLabel Decoder API listening on port ${port}`))
+// Vercel imports the Express app as a serverless function. Keep the local
+// development server available when this file is run directly.
+if (process.env.VERCEL !== '1') {
+  const port = Number(process.env.PORT ?? 3003)
+  app.listen(port, () => console.log(`FoodLabel Decoder API listening on port ${port}`))
+}
+
+export default app

@@ -21,8 +21,8 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 12 * 1024 * 1024) {
-      setError('Choose a JPG, PNG, or WebP image smaller than 12 MB.')
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4 * 1024 * 1024) {
+      setError('Choose a JPG, PNG, or WebP image smaller than 4 MB.')
       return
     }
     setFiles(previous => ({ ...previous, [panel]: file }))
