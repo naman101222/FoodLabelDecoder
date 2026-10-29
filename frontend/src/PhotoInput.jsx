@@ -36,34 +36,34 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
     let worker
     setBusy(true)
     setError('')
+    setReading(null)
     onReset()
     try {
-      let cloudAvailable = false
+      let geminiConfigured = false
       try {
         const response = await fetch('/api/ocr/status', { signal: AbortSignal.timeout(5000) })
-        cloudAvailable = response.ok && (await response.json()).configured === true
+        if (response.ok) geminiConfigured = (await response.json()).configured === true
       } catch { /* A running local OCR path is still available if the API is offline. */ }
       const next = {}
       const providers = new Set()
       for (const [panel, title] of panels) {
         if (!files[panel]) continue
         let result
-        if (cloudAvailable) {
+        if (geminiConfigured) {
           setStatus(`Sending the ${title.toLowerCase()} photo to Gemini for visual reading…`)
-          try {
-            const response = await fetch('/api/ocr', {
-              method: 'POST',
-              headers: { 'Content-Type': files[panel].type, 'X-Label-Panel': panel },
-              body: files[panel],
-              signal: AbortSignal.timeout(55000),
-            })
-            const data = await response.json()
-            if (!response.ok) throw new Error(data.error || 'Cloud OCR failed.')
-            result = { text: data.text, uncertainSegments: data.uncertainSegments || [], provider: data.provider }
-          } catch (cloudError) {
-            setStatus(`Gemini could not read this photo (${cloudError.message}). Trying local Tesseract OCR…`)
-            cloudAvailable = false
-          }
+          const response = await fetch('/api/ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': files[panel].type, 'X-Label-Panel': panel },
+            body: files[panel],
+            signal: AbortSignal.timeout(55000),
+          })
+          const responseText = await response.text()
+          let data
+          try { data = JSON.parse(responseText) }
+          catch { data = { error: `OCR service returned an unreadable response (HTTP ${response.status}).` } }
+          if (!response.ok) throw new Error(`${title}: ${data.error || `Gemini request failed (HTTP ${response.status}).`}`)
+          if (typeof data.text !== 'string' || !data.text.trim()) throw new Error(`${title}: Gemini did not find readable text in this photo. Try a closer, upright, glare-free photo.`)
+          result = { text: data.text, uncertainSegments: data.uncertainSegments || [], provider: data.provider }
         }
         if (!result) {
           if (!worker) {
@@ -85,6 +85,7 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
         next[`${panel}Uncertain`] = result.uncertainSegments || []
         next[`${panel}Provider`] = result.provider
         providers.add(result.provider)
+        setReading({ ...next })
       }
       next.ocrProvider = [...providers].join(' + ')
       if (!next.nutrition?.trim()) throw new Error('The nutrition panel could not be read. Try a closer, straighter photo with less glare.')
