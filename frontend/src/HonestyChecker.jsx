@@ -54,7 +54,6 @@ export default function HonestyChecker({ report, onResult }) {
   return <section className="honesty-checker">
     <h3>Check the package claims</h3>
     <p className="format-help">We compare claims we can recognize with the ingredient and nutrition evidence. Confirm the detected phrases or choose the claims you see on the pack.</p>
-    {report.frontText && <div className="detected-claims"><strong>Text read from the front</strong><p>{report.frontText}</p><span>Confirm which phrases are claims below; OCR text alone is not treated as proof.</span></div>}
     <form onSubmit={check}>
       <fieldset className="claim-options">
         <legend>Claims to check</legend>

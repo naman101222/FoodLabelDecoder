@@ -16,8 +16,57 @@ const responseSchema = {
   required: ['text', 'uncertainSegments'],
 }
 
+const nutritionResponseSchema = {
+  type: 'OBJECT',
+  properties: {
+    text: responseSchema.properties.text,
+    uncertainSegments: responseSchema.properties.uncertainSegments,
+    nutritionData: {
+      type: 'OBJECT',
+      properties: {
+        servingSize: { type: 'STRING', description: 'The serving-size text exactly as printed, or an empty string if absent.' },
+        servingsPerContainer: { type: 'STRING', description: 'The servings-per-container count exactly as printed, or an empty string if absent.' },
+        columns: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              label: { type: 'STRING', description: 'Exact visible column heading.' },
+              kind: { type: 'STRING', enum: ['per100g', 'per100ml', 'perServing', 'dailyValue', 'other'] },
+            },
+            required: ['label', 'kind'],
+          },
+        },
+        nutrients: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              name: { type: 'STRING', description: 'The nutrient row name exactly as printed.' },
+              cells: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    column: { type: 'STRING', description: 'The exact heading of the column this cell is under.' },
+                    value: { type: 'STRING', description: 'The exact value and unit in that cell, or [unclear] if unreadable.' },
+                  },
+                  required: ['column', 'value'],
+                },
+              },
+            },
+            required: ['name', 'cells'],
+          },
+        },
+      },
+      required: ['servingSize', 'servingsPerContainer', 'columns', 'nutrients'],
+    },
+  },
+  required: ['text', 'uncertainSegments', 'nutritionData'],
+}
+
 const panelInstructions = {
-  nutrition: 'Read only the nutrition facts table; ignore the ingredients, addresses, barcode, storage text, and all other package copy. Preserve the printed serving size and nutrition basis. Output one nutrient per line in this format: "Nutrient: amount unit per 100 g | amount unit per serving | daily value percent". Include only columns that are visibly printed, preserve their order, and keep each amount attached to its own unit. Include the serving-size line separately. Do not put column values on separate lines.',
+  nutrition: 'Read only the nutrition facts table; ignore ingredients, addresses, barcode, storage text, and other package copy. In nutritionData, record every visible table heading in printed order. Classify a column as per100g or per100ml only when its heading explicitly says that basis; classify serving columns as perServing, % daily value columns as dailyValue, and any unclear or different basis as other. For each nutrient row, place each visible cell under the exact matching column heading and preserve its amount and unit exactly. Never assume the first number is per 100 g, rearrange cells, or calculate/convert values. Include the serving size and servings per container only if printed, otherwise use an empty string. If a cell is unreadable, set it to [unclear] and add that snippet to uncertainSegments. In text, preserve the visible table with headings and rows.',
   ingredients: 'Read only the ingredients list, from its INGREDIENTS heading through the end of that list. Stop before storage, manufacturer, nutrition, or other sections. Preserve every visible ingredient in printed order, including commas, brackets, and sub-ingredients. Do not summarize, explain, translate, or reorder.',
   front: 'Read only the front-of-pack product name, brand, and exact marketing or nutrition claim phrases. Ignore small nutrition summaries and other package text. Preserve the printed wording. Do not decide whether any claim is true.',
 }
@@ -58,7 +107,7 @@ export async function readLabelImage(image, mimeType, panel) {
           temperature: 0,
           maxOutputTokens: 7000,
           responseMimeType: 'application/json',
-          responseJsonSchema: responseSchema,
+          responseJsonSchema: panel === 'nutrition' ? nutritionResponseSchema : responseSchema,
         },
       }),
       signal: AbortSignal.timeout(45000),
@@ -89,10 +138,27 @@ export async function readLabelImage(image, mimeType, panel) {
   if (typeof result.text !== 'string' || result.text.length > 20000 || !Array.isArray(result.uncertainSegments)) {
     throw new Error('Gemini returned an incomplete OCR response. Try again or use local OCR.')
   }
+  let nutritionData
+  if (panel === 'nutrition') {
+    const candidateData = result.nutritionData
+    if (!candidateData || !Array.isArray(candidateData.columns) || !Array.isArray(candidateData.nutrients)) {
+      throw new Error('Gemini could not map the nutrition values to their printed column headings. Retake a closer photo of the full table.')
+    }
+    nutritionData = {
+      servingSize: typeof candidateData.servingSize === 'string' ? candidateData.servingSize.slice(0, 120) : '',
+      servingsPerContainer: typeof candidateData.servingsPerContainer === 'string' ? candidateData.servingsPerContainer.slice(0, 40) : '',
+      columns: candidateData.columns.filter(column => column && typeof column.label === 'string' && typeof column.kind === 'string').slice(0, 20),
+      nutrients: candidateData.nutrients.filter(row => row && typeof row.name === 'string' && Array.isArray(row.cells)).slice(0, 80).map(row => ({
+        name: row.name.slice(0, 100),
+        cells: row.cells.filter(cell => cell && typeof cell.column === 'string' && typeof cell.value === 'string').slice(0, 20).map(cell => ({ column: cell.column.slice(0, 100), value: cell.value.slice(0, 80) })),
+      })),
+    }
+  }
   return {
     text: result.text.trim(),
     uncertainSegments: result.uncertainSegments.filter(item => typeof item === 'string').slice(0, 80),
     provider: 'Google Gemini',
     model,
+    ...(nutritionData ? { nutritionData } : {}),
   }
 }

@@ -48,9 +48,14 @@ function readNutrient(line, definition) {
 }
 
 function parseBasis(text) {
-  if (/\bper\s*100\s*(?:g|grams?)\b|\b100\s*g\s*(?:basis)?\b/i.test(text)) return 'per100g'
-  if (/\bper\s*100\s*(?:ml|millilitres?|milliliters?)\b/i.test(text)) return 'per100ml'
-  if (/\b(?:amount\s+)?per\s+serving\b|\bserving\s+size\b/i.test(text)) return 'perServing'
+  const per100g = /\bper\s*100\s*(?:g|grams?)\b|\b100\s*g\s*(?:basis)?\b/i.test(text)
+  const per100ml = /\bper\s*100\s*(?:ml|millilitres?|milliliters?)\b/i.test(text)
+  const perServing = /\b(?:amount\s+)?per\s+serv(?:ing|e)\b/i.test(text)
+  const explicitBases = [per100g, per100ml, perServing].filter(Boolean).length
+  if (explicitBases > 1) return 'unknown'
+  if (per100g) return 'per100g'
+  if (per100ml) return 'per100ml'
+  if (perServing) return 'perServing'
   return 'unknown'
 }
 
@@ -157,6 +162,105 @@ export function analyze(label, frontText = '') {
     servingGrams: packageFacts.servingGrams, servingMl: packageFacts.servingMl,
     servingsPerContainer, servingsSource, netWeightGrams, netVolumeMl: packageFacts.netVolumeMl,
     suggestedClaims: suggestClaims(frontText),
+  }
+}
+
+const structuredKinds = new Set(['per100g', 'per100ml', 'perServing', 'dailyValue', 'other'])
+const normalizeHeader = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+
+function structuredAmount(value, fallbackUnit) {
+  const match = String(value || '').match(/^\s*(less\s+than\s+|<\s*)?(\d{1,5}(?:[.,]\d+)?)\s*(kcal|kj|mg|g|mcg|µg|ug)?\s*$/i)
+  if (!match) return null
+  const unit = (match[3] || fallbackUnit || '').toLowerCase()
+  if (!unit || /\[unclear\]/i.test(value)) return null
+  return {
+    value: Number(match[2].replace(',', '.')),
+    unit: unit === 'ug' ? 'µg' : unit,
+    qualifier: match[1] ? 'less-than' : 'exact',
+    confidence: match[3] || fallbackUnit ? 'clear' : 'estimated-unit',
+  }
+}
+
+export function applyStructuredNutrition(report, nutritionData) {
+  if (!nutritionData || !Array.isArray(nutritionData.columns) || !Array.isArray(nutritionData.nutrients)) return report
+
+  const columns = nutritionData.columns
+    .filter(column => column && typeof column.label === 'string' && structuredKinds.has(column.kind))
+    .slice(0, 20)
+  const kinds = new Set(columns.map(column => column.kind))
+  const basis = ['per100g', 'per100ml', 'perServing'].find(kind => kinds.has(kind)) || 'unknown'
+  const serving = typeof nutritionData.servingSize === 'string' && nutritionData.servingSize.trim()
+    ? nutritionData.servingSize.trim()
+    : report.serving
+  const servingCountText = String(nutritionData.servingsPerContainer || '').trim()
+  const servingCount = /^\d+(?:[.,]\d+)?$/.test(servingCountText)
+    ? Number(servingCountText.replace(',', '.'))
+    : report.servingsPerContainer
+  const issues = []
+  const nutrients = []
+
+  if (basis !== 'unknown') {
+    for (const row of nutritionData.nutrients.slice(0, 80)) {
+      if (!row || typeof row.name !== 'string' || !Array.isArray(row.cells)) continue
+      const rowName = row.name.trim().replace(/^(?:of\s+which|including)\s+/i, '')
+      const definition = nutrientDefinitions.find(item => item.pattern.test(rowName))
+      const key = definition?.key || rowName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      if (!key) continue
+      const amountFor = kind => {
+        const labels = columns.filter(column => column.kind === kind).map(column => normalizeHeader(column.label))
+        const cell = row.cells.find(candidate => labels.includes(normalizeHeader(candidate.column)))
+        if (!cell) return null
+        const declaredUnit = rowName.match(/\(\s*(kcal|kj|mg|g|mcg|µg|ug)\s*\)/i)?.[1] || definition?.unit
+        return structuredAmount(cell.value, declaredUnit)
+      }
+      const primary = amountFor(basis)
+      if (!primary) {
+        issues.push({ line: row.name, reason: `Gemini could not confidently read a value from the printed ${basis === 'perServing' ? 'per-serving' : basis === 'per100ml' ? 'per-100-ml' : 'per-100-g'} column for this row.` })
+        continue
+      }
+      if (nutrients.some(item => item.key === key)) {
+        issues.push({ line: row.name, reason: 'Gemini returned more than one row for this nutrient; the first row was kept.' })
+        continue
+      }
+      nutrients.push({
+        key,
+        name: definition?.name || rowName.replace(/\s*\([^)]*\)\s*$/, ''),
+        value: primary.value,
+        unit: primary.unit,
+        qualifier: primary.qualifier,
+        confidence: primary.confidence,
+        raw: row.name,
+        ...(basis === 'per100g' ? { per100g: primary } : {}),
+        ...(basis === 'per100ml' ? { per100ml: primary } : {}),
+        ...(basis === 'perServing' ? { perServing: primary } : {}),
+        ...(kinds.has('per100g') && basis !== 'per100g' && amountFor('per100g') ? { per100g: amountFor('per100g') } : {}),
+        ...(kinds.has('per100ml') && basis !== 'per100ml' && amountFor('per100ml') ? { per100ml: amountFor('per100ml') } : {}),
+        ...(kinds.has('perServing') && basis !== 'perServing' && amountFor('perServing') ? { perServing: amountFor('perServing') } : {}),
+      })
+    }
+  } else {
+    issues.push({
+      line: 'Nutrition column headings',
+      reason: 'Gemini could not identify an explicit per-100-g, per-100-ml, or per-serving column. Amounts are withheld instead of being assigned to a guessed basis.',
+    })
+  }
+
+  const notes = report.notes.filter(note => !/nutrition basis|no nutrient amounts|nutrition values are transcribed/i.test(note))
+  if (basis === 'unknown') notes.push('Nutrition amounts are withheld because the table column basis could not be identified.')
+  else notes.push('Gemini matched nutrient cells to their printed column headings. Check the transcription against the package before relying on the values.')
+  if (!nutrients.length && basis !== 'unknown') notes.push('No nutrient amounts were confidently read from the selected nutrition column.')
+
+  return {
+    ...report,
+    serving,
+    servingGrams: parseGrams(serving || ''),
+    servingMl: parseMillilitres(serving || ''),
+    servingsPerContainer: servingCount,
+    basis,
+    nutrients,
+    issues,
+    notes,
+    nutritionColumns: [...kinds],
   }
 }
 

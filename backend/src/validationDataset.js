@@ -44,29 +44,6 @@ export function datasetInfo() {
   return { name: 'packaged_foods_india.csv', records: products.length, purpose: 'candidate-product and nutrient cross-check only', source: 'User-supplied Kaggle CSV; provenance URL has not been recorded.' }
 }
 
-function normalizeIngredient(value = '') {
-  return value.toLowerCase().replace(/\bins?\s*/g, 'ins ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ')
-}
-
-const ingredientRecords = products.flatMap(product => String(product.Ingredients || '').split(/[,;\n]+/).map(raw => ({
-  normalized: normalizeIngredient(raw.replace(/[()[\]]/g, ' ')),
-  product: product['Item name'],
-}))).filter(item => item.normalized.length > 2)
-
-export function findIngredientInDataset(ingredient) {
-  const normalized = normalizeIngredient(ingredient.replace(/[()[\]]/g, ' '))
-  if (!normalized) return null
-  const exact = ingredientRecords.filter(item => item.normalized === normalized)
-  if (exact.length) return { match: exact[0].normalized, productCount: new Set(exact.map(item => item.product)).size }
-  const tokenSet = new Set(normalized.split(' ').filter(token => token.length > 2))
-  const candidates = ingredientRecords.filter(item => {
-    const tokens = item.normalized.split(' ').filter(token => token.length > 2)
-    return tokens.length > 0 && tokens.every(token => tokenSet.has(token))
-  })
-  if (!candidates.length || normalized.split(' ').length > 8) return null
-  return { match: candidates[0].normalized, productCount: new Set(candidates.map(item => item.product)).size }
-}
-
 export function findDatasetMatches({ label = '', frontText = '', ingredients = '' }) {
   const query = words(`${frontText} ${label} ${ingredients}`)
   const candidates = products.map(product => {

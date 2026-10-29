@@ -19,6 +19,7 @@ export default function App() {
         body: JSON.stringify({
           label: `${reading.nutrition || ''}\nIngredients: ${reading.ingredients || ''}`,
           frontText: reading.front || '',
+          nutritionData: reading.nutritionData || null,
           ocrConfidence: reading.nutritionConfidence ?? null,
           ocrProvider: reading.ocrProvider || null,
         }),

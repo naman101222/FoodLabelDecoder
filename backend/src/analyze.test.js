@@ -10,7 +10,7 @@ test('reads units in headings and values on the next line', () => {
 
 test('selected claims return evidence records and do not assign a numeric score', () => {
   const result = evaluateLabel('whole wheat, rice, sugar, cocoa', ['no-added-sugar', 'multigrain'], true)
-  assert.equal(result.ingredientProfile.sugarCount, 1)
+  assert.equal('ingredientProfile' in result, false)
   assert.equal(result.honesty.checks[0].status, 'contradicted-by-read-label')
   assert.equal(result.honesty.checks[1].status, 'no-rule-recorded')
   assert.equal('score' in result.honesty, false)

@@ -66,14 +66,31 @@ export function buildNutritionView(report) {
     packFactor = report.servingsPerContainer * servingAmount / 100
   }
 
-  const nutrients = report.nutrients.map(nutrient => ({
-    key: nutrient.key,
-    name: nutrient.name,
-    unit: nutrient.unit,
-    asRead: scaleNutrient(nutrient, 1),
-    perServing: servingFactor === null ? null : scaleNutrient(nutrient, servingFactor),
-    wholePack: packFactor === null ? null : scaleNutrient(nutrient, packFactor),
-  }))
+  const nutrients = report.nutrients.map(nutrient => {
+    const asRead = nutrient[report.basis] || scaleNutrient(nutrient, 1)
+    const per100g = nutrient.per100g || (report.basis === 'per100g'
+      ? scaleNutrient(nutrient, 1)
+      : report.basis === 'perServing' && report.servingGrams > 0
+        ? scaleNutrient(nutrient, 100 / report.servingGrams) : null)
+    const per100ml = nutrient.per100ml || (report.basis === 'per100ml'
+      ? scaleNutrient(nutrient, 1)
+      : report.basis === 'perServing' && report.servingMl > 0
+        ? scaleNutrient(nutrient, 100 / report.servingMl) : null)
+    const perServing = nutrient.perServing || (servingFactor === null ? null : scaleNutrient(nutrient, servingFactor))
+    const wholePackFromServing = nutrient.perServing && report.servingsPerContainer > 0
+      ? scaleNutrient(nutrient.perServing, report.servingsPerContainer)
+      : null
+    return {
+      key: nutrient.key,
+      name: nutrient.name,
+      unit: nutrient.unit,
+      asRead,
+      per100g,
+      per100ml,
+      perServing,
+      wholePack: wholePackFromServing || (packFactor === null ? null : scaleNutrient(nutrient, packFactor)),
+    }
+  })
 
   const leadingIngredients = (report.ingredients || '')
     .replace(/^ingredients\s*[:：-]?\s*/i, '')
@@ -84,7 +101,10 @@ export function buildNutritionView(report) {
 
   return {
     columns: {
-      perServing: servingFactor !== null,
+      perServing: report.nutritionColumns?.includes('perServing') || servingFactor !== null,
+      perServingSource: report.nutritionColumns?.includes('perServing') ? 'printed' : servingFactor !== null ? 'calculated' : null,
+      per100g: report.nutritionColumns?.includes('per100g') || report.basis === 'per100g',
+      per100ml: report.nutritionColumns?.includes('per100ml') || report.basis === 'per100ml',
       wholePack: packFactor !== null,
       servingsPerContainer: report.servingsPerContainer || null,
       servingsSource: report.servingsSource || null,

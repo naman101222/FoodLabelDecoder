@@ -60,6 +60,13 @@ export default function RealityCheck({ report }) {
     { label: 'Protein', amount: amountFor('protein') },
     { label: 'Dietary fibre', amount: amountFor('dietary-fiber') },
   ].filter(item => item.amount)
+  const tableColumns = [
+    view.columns.per100g && { key: 'per100g', label: 'Per 100 g' },
+    view.columns.per100ml && { key: 'per100ml', label: 'Per 100 ml' },
+    view.columns.perServing && { key: 'perServing', label: 'Per serving', detail: view.columns.serving },
+    view.columns.wholePack && { key: 'wholePack', label: 'Whole pack', detail: view.columns.netWeightGrams ? `${view.columns.netWeightGrams} g net` : view.columns.netVolumeMl ? `${view.columns.netVolumeMl} ml net` : null },
+  ].filter(Boolean)
+  if (!tableColumns.length) tableColumns.push({ key: 'asRead', label: 'As read' })
 
   let verdictTitle = 'Your label verdict'
   let verdictText
@@ -82,13 +89,11 @@ export default function RealityCheck({ report }) {
         <table className="nutrition-table">
           <thead><tr>
             <th scope="col">Nutrient</th>
-            <th scope="col">{view.columns.perServing ? 'Per serving' : view.columns.basis === 'per100ml' ? 'Per 100 ml' : view.columns.basis === 'per100g' ? 'Per 100 g' : 'As read'}{view.columns.perServing && view.columns.serving ? <small>{view.columns.serving}</small> : null}</th>
-            {view.columns.wholePack && <th scope="col">Whole pack{view.columns.netWeightGrams ? <small>{view.columns.netWeightGrams} g net</small> : view.columns.netVolumeMl ? <small>{view.columns.netVolumeMl} ml net</small> : null}</th>}
+            {tableColumns.map(column => <th scope="col" key={column.key}>{column.label}{column.detail ? <small>{column.detail}{column.key === 'perServing' && view.columns.perServingSource === 'calculated' ? ' · calculated' : ''}</small> : column.key === 'perServing' && view.columns.perServingSource === 'calculated' ? <small>Calculated</small> : null}</th>)}
           </tr></thead>
           <tbody>{view.nutrients.map(nutrient => <tr key={nutrient.key}>
             <th scope="row">{nutrient.name}</th>
-            <td>{view.columns.perServing ? display(nutrient.perServing) : display(nutrient.asRead)}</td>
-            {view.columns.wholePack && <td>{display(nutrient.wholePack)}</td>}
+            {tableColumns.map(column => <td key={column.key}>{display(nutrient[column.key])}</td>)}
           </tr>)}</tbody>
         </table>
       </div>

@@ -19,7 +19,6 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
 
   function choose(event, panel) {
     const file = event.target.files?.[0]
-    event.target.value = ''
     if (!file) return
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4 * 1024 * 1024) {
       setError('Choose a JPG, PNG, or WebP image smaller than 4 MB.')
@@ -65,7 +64,7 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
             catch { data = { error: `OCR service returned an unreadable response (HTTP ${response.status}).` } }
             if (!response.ok) throw new Error(data.error || `Gemini request failed (HTTP ${response.status}).`)
             if (typeof data.text !== 'string' || !data.text.trim()) throw new Error('Gemini did not find readable text. Try a closer, upright, glare-free photo.')
-            result = { text: data.text, uncertainSegments: data.uncertainSegments || [], provider: data.provider }
+            result = { text: data.text, nutritionData: data.nutritionData, uncertainSegments: data.uncertainSegments || [], provider: data.provider }
           } catch (cloudError) {
             geminiErrors.push(`${title}: ${cloudError.message || 'Gemini could not read this photo.'}`)
             setStatus(`Gemini could not read ${title.toLowerCase()}. Trying Gemini on the next selected photo…`)
@@ -88,6 +87,7 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
         }
         if (run !== generation.current) return
         next[panel] = result.text
+        if (panel === 'nutrition' && result.nutritionData) next.nutritionData = result.nutritionData
         next[`${panel}Confidence`] = result.confidence
         next[`${panel}Uncertain`] = result.uncertainSegments || []
         next[`${panel}Provider`] = result.provider
@@ -136,7 +136,8 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
     {panels.map(([panel, title, help]) => <div className="upload-slot" key={panel}>
       <label htmlFor={panel}>{title}{panel === 'front' ? ' (optional)' : ' *'}</label>
       <p className="format-help">{help}</p>
-      <input id={panel} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" disabled={busy || disabled} onChange={event => choose(event, panel)} />
+      <input id={panel} className="photo-file-input" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || disabled} onClick={event => { event.currentTarget.value = '' }} onChange={event => choose(event, panel)} />
+      <label className="photo-picker" htmlFor={panel}>{files[panel] ? 'Change photo' : 'Choose photo'}</label>
       {files[panel] && <p className="file-name">Selected: {files[panel].name}</p>}
     </div>)}
     <p className="privacy-note">When Gemini is configured, selected photos are sent to Google for reading; Gemini free-tier content may be used to improve Google products. Otherwise, Tesseract reads them on this device. The analysis API receives the extracted text.</p>
@@ -155,7 +156,7 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
       {panels.map(([panel, title]) => reading[panel] !== undefined && <div className="review-field" key={panel}>
         <label htmlFor={`read-${panel}`}>{title} text{reading[panel + 'Confidence'] !== undefined ? ` · Tesseract estimate ${Math.round(reading[panel + 'Confidence'])}%` : ` · ${reading[panel + 'Provider'] || reading.ocrProvider || 'visual reading'}`}</label>
         {reading[panel + 'Uncertain']?.length > 0 && <p className="format-help">Gemini marked these parts as unclear: {reading[panel + 'Uncertain'].join(' · ')}</p>}
-        <textarea id={`read-${panel}`} className="label-input" rows={panel === 'ingredients' ? 7 : 5} value={reading[panel]} onChange={event => { setReading({ ...reading, [panel]: event.target.value }); onReset() }} />
+        <textarea id={`read-${panel}`} className="label-input" rows={panel === 'ingredients' ? 7 : 5} value={reading[panel]} onChange={event => { setReading({ ...reading, [panel]: event.target.value, ...(panel === 'nutrition' ? { nutritionData: null } : {}) }); onReset() }} />
       </div>)}
       <button type="button" className="submit-button" disabled={busy || disabled || !reading.nutrition?.trim()} onClick={analyzeCorrected}>Analyze corrected text</button>
     </details>}

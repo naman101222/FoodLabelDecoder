@@ -1,6 +1,6 @@
 import cors from 'cors'
 import express from 'express'
-import { analyze } from './analyze.js'
+import { analyze, applyStructuredNutrition } from './analyze.js'
 import { evaluateLabel } from './honesty.js'
 import { findDatasetMatches } from './validationDataset.js'
 import { buildNutritionView } from './nutritionView.js'
@@ -51,7 +51,7 @@ app.post('/api/analyze', (request, response) => {
     response.status(400).json({ error: 'OCR confidence must be a number from 0 to 100.' })
     return
   }
-  const report = analyze(label, frontText)
+  const report = applyStructuredNutrition(analyze(label, frontText), request.body?.nutritionData)
   const nutritionView = buildNutritionView(report)
   const selectedClaims = request.body?.selectedClaims ?? report.suggestedClaims
   if (!Array.isArray(selectedClaims) || selectedClaims.length > 12) {
