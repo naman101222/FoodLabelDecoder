@@ -1,3 +1,5 @@
+import { buildDisplayView } from './nutritionDisplay.js'
+
 function display(amount) {
   if (!amount) return 'Not available'
   const value = Number.isInteger(amount.value) ? amount.value : amount.value.toFixed(1)
@@ -11,38 +13,39 @@ const levelCopy = {
   unknown: ['Needs a clearer reading', 'level-unknown'],
 }
 
-export default function RealityCheck({ report }) {
-  const calculatedView = report.nutritionView
-  const rawNutrients = Array.isArray(report.nutrients) ? report.nutrients : []
-  const rawByKey = new Map(rawNutrients.filter(nutrient => nutrient.key).map(nutrient => [nutrient.key, nutrient]))
-  const titleFromKey = key => typeof key === 'string'
-    ? key.split(/[-_]+/).filter(Boolean).map(part => part[0].toUpperCase() + part.slice(1)).join(' ')
-    : ''
-  const visibleName = (...values) => values.find(value => typeof value === 'string' && value.trim())
-  const fallbackNutrients = rawNutrients.map((nutrient, index) => ({
-    key: nutrient.key || nutrient.name || `nutrient-${index}`,
-    name: visibleName(nutrient.name) || titleFromKey(nutrient.key) || `Nutrient ${index + 1}`,
-    unit: nutrient.unit,
-    asRead: { value: nutrient.value, unit: nutrient.unit },
-    perServing: null,
-    wholePack: null,
-  }))
-  const namedCalculatedNutrients = Array.isArray(calculatedView?.nutrients)
-    ? calculatedView.nutrients.map((nutrient, index) => {
-      const original = rawByKey.get(nutrient.key) || rawNutrients[index]
-      return {
-        ...nutrient,
-        name: visibleName(nutrient.name, nutrient.label, original?.name) || titleFromKey(nutrient.key || original?.key) || `Nutrient ${index + 1}`,
-      }
-    })
-    : []
-  const view = {
-    ...calculatedView,
-    columns: calculatedView?.columns || { basis: report.basis || 'unknown' },
-    nutrients: namedCalculatedNutrients.length ? namedCalculatedNutrients : fallbackNutrients,
-    insights: calculatedView?.insights || [],
-    leadingIngredients: calculatedView?.leadingIngredients || [],
-  }
+export function NutritionTable({ view }) {
+  if (!view.nutrients.length) return null
+  const tableColumns = [
+    view.columns.per100g && { key: 'per100g', label: 'Per 100 g' },
+    view.columns.per100ml && { key: 'per100ml', label: 'Per 100 ml' },
+    view.columns.perServing && { key: 'perServing', label: 'Per serving', detail: view.columns.serving },
+    view.columns.wholePack && { key: 'wholePack', label: 'Whole pack', detail: view.columns.netWeightGrams ? `${view.columns.netWeightGrams} g net` : view.columns.netVolumeMl ? `${view.columns.netVolumeMl} ml net` : null },
+  ].filter(Boolean)
+  if (!tableColumns.length) tableColumns.push({ key: 'asRead', label: 'As read' })
+
+  return <section className="reality-section">
+    <p className="section-kicker">Reality check</p>
+    <h3>Label amounts</h3>
+    {view.columns.servingsPerContainer && <p className="serving-context">{view.columns.servingsPerContainer} {view.columns.servingsPerContainer === 1 ? 'serving' : 'servings'} in this pack{view.columns.servingsSource === 'estimated-from-pack-weight' ? ' · estimated from net and serving weight' : ''}</p>}
+    <div className="nutrition-table-wrap">
+      <table className="nutrition-table">
+        <thead><tr>
+          <th scope="col">Nutrient</th>
+          {tableColumns.map(column => <th scope="col" key={column.key}>{column.label}{column.detail ? <small>{column.detail}{column.key === 'perServing' && view.columns.perServingSource === 'calculated' ? ' · calculated' : ''}</small> : column.key === 'perServing' && view.columns.perServingSource === 'calculated' ? <small>Calculated</small> : null}</th>)}
+        </tr></thead>
+        <tbody>{view.nutrients.map(nutrient => <tr key={nutrient.key}>
+          <th scope="row">{nutrient.name}</th>
+          {tableColumns.map(column => <td key={column.key}>{display(nutrient[column.key])}</td>)}
+        </tr>)}</tbody>
+      </table>
+    </div>
+    {view.columns.wholePack && view.columns.servingsPerContainer === 1 && <p className="portion-callout">This pack is one serving, so the per-serving amount is the whole-pack amount.</p>}
+    {!view.columns.wholePack && <p className="format-help dark-help">Whole-pack totals need a readable serving count or net package weight. We leave them blank instead of guessing.</p>}
+  </section>
+}
+
+export default function RealityCheck({ report, view: preparedView }) {
+  const view = preparedView || buildDisplayView(report)
   if (!view.nutrients.length) return null
   const insights = view.insights || []
   const highCount = insights.filter(item => item.level === 'high').length
@@ -60,14 +63,6 @@ export default function RealityCheck({ report }) {
     { label: 'Protein', amount: amountFor('protein') },
     { label: 'Dietary fibre', amount: amountFor('dietary-fiber') },
   ].filter(item => item.amount)
-  const tableColumns = [
-    view.columns.per100g && { key: 'per100g', label: 'Per 100 g' },
-    view.columns.per100ml && { key: 'per100ml', label: 'Per 100 ml' },
-    view.columns.perServing && { key: 'perServing', label: 'Per serving', detail: view.columns.serving },
-    view.columns.wholePack && { key: 'wholePack', label: 'Whole pack', detail: view.columns.netWeightGrams ? `${view.columns.netWeightGrams} g net` : view.columns.netVolumeMl ? `${view.columns.netVolumeMl} ml net` : null },
-  ].filter(Boolean)
-  if (!tableColumns.length) tableColumns.push({ key: 'asRead', label: 'As read' })
-
   let verdictTitle = 'Your label verdict'
   let verdictText
   if (contradicted.length) {
@@ -81,32 +76,10 @@ export default function RealityCheck({ report }) {
   }
 
   return <div className="reality-check">
-    <section className="reality-section">
-      <p className="section-kicker">Reality check</p>
-      <h3>Label amounts</h3>
-      {view.columns.servingsPerContainer && <p className="serving-context">{view.columns.servingsPerContainer} {view.columns.servingsPerContainer === 1 ? 'serving' : 'servings'} in this pack{view.columns.servingsSource === 'estimated-from-pack-weight' ? ' · estimated from net and serving weight' : ''}</p>}
-      <div className="nutrition-table-wrap">
-        <table className="nutrition-table">
-          <thead><tr>
-            <th scope="col">Nutrient</th>
-            {tableColumns.map(column => <th scope="col" key={column.key}>{column.label}{column.detail ? <small>{column.detail}{column.key === 'perServing' && view.columns.perServingSource === 'calculated' ? ' · calculated' : ''}</small> : column.key === 'perServing' && view.columns.perServingSource === 'calculated' ? <small>Calculated</small> : null}</th>)}
-          </tr></thead>
-          <tbody>{view.nutrients.map(nutrient => <tr key={nutrient.key}>
-            <th scope="row">{nutrient.name}</th>
-            {tableColumns.map(column => <td key={column.key}>{display(nutrient[column.key])}</td>)}
-          </tr>)}</tbody>
-        </table>
-      </div>
-      {view.columns.wholePack && view.columns.servingsPerContainer === 1 && <p className="portion-callout">This pack is one serving, so the per-serving amount is the whole-pack amount.</p>}
-      {!view.columns.wholePack && <p className="format-help dark-help">Whole-pack totals need a readable serving count or net package weight. We leave them blank instead of guessing.</p>}
-    </section>
-
-    {(macros.length > 0 || view.leadingIngredients.length > 0) && <section className="reality-section snapshot-section">
+    {macros.length > 0 && <section className="reality-section snapshot-section">
       <p className="section-kicker">At a glance</p>
       <h3>What stands out</h3>
       {macros.length > 0 && <div className="snapshot-grid">{macros.map(item => <div className="snapshot-item" key={item.label}><span>{item.label}</span><strong>{display(item.amount)}</strong>{item.detail && <small>{item.detail}</small>}</div>)}</div>}
-      {view.leadingIngredients.length > 0 && <p className="leading-ingredients"><strong>First ingredients listed:</strong> {view.leadingIngredients.join(' · ')}</p>}
-      <p className="snapshot-note">These are facts read from the package, not predictions about how your body will respond.</p>
     </section>}
 
     <section className="reality-section">

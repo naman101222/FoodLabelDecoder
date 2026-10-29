@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import PhotoInput from './PhotoInput.jsx'
 import HonestyChecker from './HonestyChecker.jsx'
-import RealityCheck from './RealityCheck.jsx'
+import RealityCheck, { NutritionTable } from './RealityCheck.jsx'
+import { buildDisplayView } from './nutritionDisplay.js'
 
 export default function App() {
   const [report, setReport] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const displayView = report ? buildDisplayView(report) : null
 
   async function decode(reading) {
     setBusy(true)
@@ -47,7 +49,7 @@ export default function App() {
           <p className="report-label">Your food reality check</p>
           <h2 className="report-title">{report?.name === 'Your food label' ? 'Your scan results' : report?.name || 'Ready when you are'}</h2>
           {report ? <>
-            <RealityCheck report={report} />
+            <RealityCheck report={report} view={displayView} />
             <HonestyChecker key={`${report.frontText}-${report.ingredients}`} report={report} onResult={result => setReport(current => ({ ...current, honesty: result.honesty }))} />
             <details className="evidence-details">
               <summary>Check the text read from your photos</summary>
@@ -60,6 +62,7 @@ export default function App() {
               <p className="ingredients">{report.ingredients || 'Could not identify ingredients from the photo.'}</p>
               <ul className="notes">{report.notes.map(note => <li key={note}>{note}</li>)}</ul>
             </details>
+            <NutritionTable view={displayView} />
           </> : <p className="empty-report">{busy ? 'Reading the label…' : 'Add clear photos of the package front, nutrition panel, and full ingredients list to get your reality check.'}</p>}
         </section>
       </div>

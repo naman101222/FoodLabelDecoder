@@ -92,13 +92,6 @@ export function buildNutritionView(report) {
     }
   })
 
-  const leadingIngredients = (report.ingredients || '')
-    .replace(/^ingredients\s*[:：-]?\s*/i, '')
-    .split(/[,;\n]+/)
-    .map(item => item.trim().replace(/^[\s(]+|[\s).]+$/g, ''))
-    .filter(Boolean)
-    .slice(0, 3)
-
   return {
     columns: {
       perServing: report.nutritionColumns?.includes('perServing') || servingFactor !== null,
@@ -116,7 +109,6 @@ export function buildNutritionView(report) {
     },
     nutrients,
     insights: makeInsights(report.nutrients, report),
-    leadingIngredients,
     comparisonSource,
     notes: [
       'Low, medium, and high bands use NHS per-100 g food-label guidance as a comparison reference; they are not an India-specific legal standard or an overall health score.',
