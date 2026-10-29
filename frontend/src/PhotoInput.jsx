@@ -45,7 +45,7 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
       } catch { /* A running local OCR path is still available if the API is offline. */ }
       const next = {}
       const providers = new Set()
-      const geminiErrors = []
+      const geminiFallbacks = []
       for (const [panel, title] of panels) {
         if (!files[panel]) continue
         let result
@@ -66,9 +66,9 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
             if (typeof data.text !== 'string' || !data.text.trim()) throw new Error('Gemini did not find readable text. Try a closer, upright, glare-free photo.')
             result = { text: data.text, nutritionData: data.nutritionData, uncertainSegments: data.uncertainSegments || [], provider: data.provider }
           } catch (cloudError) {
-            geminiErrors.push(`${title}: ${cloudError.message || 'Gemini could not read this photo.'}`)
-            setStatus(`Gemini could not read ${title.toLowerCase()}. Trying Gemini on the next selected photo…`)
-            continue
+            const reason = cloudError.message || 'Gemini could not read this photo.'
+            geminiFallbacks.push({ title, reason })
+            setStatus(`Gemini could not read ${title.toLowerCase()} (${reason}). Switching to on-device OCR…`)
           }
         }
         if (!result) {
@@ -94,7 +94,6 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
         providers.add(result.provider)
         setReading({ ...next })
       }
-      if (geminiErrors.length) throw new Error(geminiErrors.join(' '))
       next.ocrProvider = [...providers].join(' + ')
       if (!next.nutrition?.trim()) throw new Error('The nutrition panel could not be read. Try a closer, straighter photo with less glare.')
       setReading(next)
@@ -102,7 +101,10 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
       await onDecode(next)
       const uncertain = [next.nutritionUncertain, next.ingredientsUncertain, next.frontUncertain].some(parts => parts?.length)
       const low = [next.nutritionConfidence, next.ingredientsConfidence, next.frontConfidence].some(value => value !== undefined && value < 55)
-      setStatus(`${next.ocrProvider} reading complete. ${uncertain || low ? 'Review unclear text before relying on the report.' : 'Review the transcription against the package.'}`)
+      const fallbackNotice = geminiFallbacks.length
+        ? ` Gemini was unavailable for ${geminiFallbacks.map(item => item.title).join(', ')}; on-device OCR was used instead.`
+        : ''
+      setStatus(`${next.ocrProvider} reading complete.${fallbackNotice} ${uncertain || low ? 'Review unclear text before relying on the report.' : 'Review the transcription against the package.'}`)
     } catch (err) {
       if (run === generation.current) setError(err.message || 'Could not read the photos. Please try again.')
     } finally {
