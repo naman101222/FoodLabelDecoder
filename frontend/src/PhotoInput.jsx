@@ -46,24 +46,31 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
       } catch { /* A running local OCR path is still available if the API is offline. */ }
       const next = {}
       const providers = new Set()
+      const geminiErrors = []
       for (const [panel, title] of panels) {
         if (!files[panel]) continue
         let result
         if (geminiConfigured) {
           setStatus(`Sending the ${title.toLowerCase()} photo to Gemini for visual reading…`)
-          const response = await fetch('/api/ocr', {
-            method: 'POST',
-            headers: { 'Content-Type': files[panel].type, 'X-Label-Panel': panel },
-            body: files[panel],
-            signal: AbortSignal.timeout(55000),
-          })
-          const responseText = await response.text()
-          let data
-          try { data = JSON.parse(responseText) }
-          catch { data = { error: `OCR service returned an unreadable response (HTTP ${response.status}).` } }
-          if (!response.ok) throw new Error(`${title}: ${data.error || `Gemini request failed (HTTP ${response.status}).`}`)
-          if (typeof data.text !== 'string' || !data.text.trim()) throw new Error(`${title}: Gemini did not find readable text in this photo. Try a closer, upright, glare-free photo.`)
-          result = { text: data.text, uncertainSegments: data.uncertainSegments || [], provider: data.provider }
+          try {
+            const response = await fetch('/api/ocr', {
+              method: 'POST',
+              headers: { 'Content-Type': files[panel].type, 'X-Label-Panel': panel },
+              body: files[panel],
+              signal: AbortSignal.timeout(55000),
+            })
+            const responseText = await response.text()
+            let data
+            try { data = JSON.parse(responseText) }
+            catch { data = { error: `OCR service returned an unreadable response (HTTP ${response.status}).` } }
+            if (!response.ok) throw new Error(data.error || `Gemini request failed (HTTP ${response.status}).`)
+            if (typeof data.text !== 'string' || !data.text.trim()) throw new Error('Gemini did not find readable text. Try a closer, upright, glare-free photo.')
+            result = { text: data.text, uncertainSegments: data.uncertainSegments || [], provider: data.provider }
+          } catch (cloudError) {
+            geminiErrors.push(`${title}: ${cloudError.message || 'Gemini could not read this photo.'}`)
+            setStatus(`Gemini could not read ${title.toLowerCase()}. Trying Gemini on the next selected photo…`)
+            continue
+          }
         }
         if (!result) {
           if (!worker) {
@@ -87,6 +94,7 @@ export default function PhotoInput({ onDecode, onReset, disabled }) {
         providers.add(result.provider)
         setReading({ ...next })
       }
+      if (geminiErrors.length) throw new Error(geminiErrors.join(' '))
       next.ocrProvider = [...providers].join(' + ')
       if (!next.nutrition?.trim()) throw new Error('The nutrition panel could not be read. Try a closer, straighter photo with less glare.')
       setReading(next)
