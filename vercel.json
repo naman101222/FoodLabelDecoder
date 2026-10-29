@@ -5,7 +5,7 @@
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/[...path].js": {
+    "api/**/*.js": {
       "includeFiles": "backend/data/**",
       "maxDuration": 60
     }

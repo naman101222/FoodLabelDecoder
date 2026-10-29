@@ -72,7 +72,7 @@ app.post('/api/evaluate', (request, response) => {
   }
   response.json(evaluateLabel(ingredients, selectedClaims, ingredientListComplete === true, nutrients, request.body?.basis))
 })
-app.get('/health', (_request, response) => response.json({ status: 'ok', service: 'food-label-decoder-api' }))
+app.get(['/health', '/api/health'], (_request, response) => response.json({ status: 'ok', service: 'food-label-decoder-api' }))
 // Vercel imports the Express app as a serverless function. Keep the local
 // development server available when this file is run directly.
 if (process.env.VERCEL !== '1') {
